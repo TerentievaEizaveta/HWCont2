@@ -1,0 +1,58 @@
+Задание 1:
+1) запустить контейнер с ubuntu, используя механизм LXC
+2) ограничить контейнер 256 Мб ОЗУ и проверить, что ограничение работает
+3) добавить автозапуск контейнеру, перезагрузить ОС и убедиться, что контейнер действительно запустился самостоятельно
+4) при создании указать файл, куда записывать логи
+5) после перезагрузки проанализировать логи
+
+
+sudo apt install lxc debootstrap bridge-utils lxc-templates
+sudo  lxc-create --name=con1 --template=ubuntu
+sudo  lxc-create -n con2 -t ubuntu --logfile=HomeWork02/con2.log
+
+Содержимое конфигурационного файла netplan контейнера con1:
+
+# cat /var/lib/lxc/con1/rootfs/etc/netplan/10-lxc.yaml 
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0: 
+      dhcp4: no
+      addresses: [ 10.0.11.2/24 ]
+      routes:
+      - to: default
+        via: 10.0.11.2
+      - to: 10.0.11.0/24
+        via: 10.0.11.2
+      - to: 10.0.12.0/24
+        via: 10.0.11.1
+
+Содержимое конфигурационного файла netplan хост-системы:
+
+# cat /etc/netplan/00-installer-config.yaml 
+# This is the network config written by 'subiquity'
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp0s3:
+      dhcp4: true
+
+  bridges:
+    lxcbr1:
+      dhcp4: false
+      addresses: [ 10.0.11.1/24 ]
+      routes:
+      - to: 10.0.11.0/24
+        via: 10.0.11.1
+        on-link: true
+    lxcbr2:
+      dhcp4: false
+      addresses: [ 10.0.12.1/24 ]
+      routes:
+      - to: 10.0.12.0/24
+        via: 10.0.12.1
+        on-link: true
+
+
